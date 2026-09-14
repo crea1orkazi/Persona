@@ -1,0 +1,4 @@
+sed -i 's/containerColor = MaterialTheme.colorScheme.background,/containerColor = androidx.compose.ui.graphics.Color.Transparent,/' app/src/main/java/com/example/ui/screens/ProfileScreen.kt
+sed -i '/floatingActionButton = {/i \        containerColor = androidx.compose.ui.graphics.Color.Transparent,' app/src/main/java/com/example/ui/screens/ProfileScreen.kt
+sed -i 's/containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant/containerColor = (if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant).copy(alpha = 0.85f)/' app/src/main/java/com/example/ui/screens/ProfileScreen.kt
+sed -i 's/containerColor = MaterialTheme.colorScheme.surface,/containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),/' app/src/main/java/com/example/ui/screens/ProfileScreen.kt

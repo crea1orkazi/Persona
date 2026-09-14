@@ -1,0 +1,863 @@
+   1 |  0 | package com.example.ui.screens
+   2 |  0 | 
+   3 |  0 | import androidx.compose.foundation.background
+   4 |  0 | import androidx.compose.animation.*
+   5 |  0 | import androidx.compose.animation.core.*
+   6 |  0 | import androidx.compose.foundation.layout.*
+   7 |  0 | import androidx.compose.foundation.lazy.LazyColumn
+   8 |  0 | import androidx.compose.foundation.lazy.items
+   9 |  0 | import androidx.compose.foundation.lazy.rememberLazyListState
+  10 |  0 | import androidx.compose.foundation.shape.RoundedCornerShape
+  11 |  0 | import androidx.compose.foundation.shape.CircleShape
+  12 |  0 | import androidx.compose.foundation.clickable
+  13 |  0 | import androidx.compose.material.icons.Icons
+  14 |  0 | import androidx.compose.material.icons.automirrored.filled.ArrowBack
+  15 |  0 | import androidx.compose.material.icons.automirrored.filled.Send
+  16 |  0 | import androidx.compose.material3.*
+  17 |  0 | import androidx.compose.runtime.*
+  18 |  0 | import androidx.compose.ui.Alignment
+  19 |  0 | import androidx.compose.ui.Modifier
+  20 |  0 | import androidx.compose.ui.graphics.Color
+  21 |  0 | import androidx.compose.ui.graphics.graphicsLayer
+  22 |  0 | import androidx.compose.ui.text.font.FontWeight
+  23 |  0 | import coil.compose.AsyncImage
+  24 |  0 | import androidx.compose.ui.layout.ContentScale
+  25 |  0 | import androidx.compose.ui.draw.clip
+  26 |  0 | import android.net.Uri
+  27 |  0 | import androidx.compose.ui.text.buildAnnotatedString
+  28 |  0 | import androidx.compose.ui.text.withStyle
+  29 |  0 | import androidx.compose.ui.text.SpanStyle
+  30 |  0 | import androidx.compose.ui.text.font.FontStyle
+  31 |  0 | import androidx.compose.ui.text.AnnotatedString
+  32 |  0 | import androidx.compose.ui.unit.dp
+  33 |  0 | import androidx.compose.ui.unit.sp
+  34 |  0 | import androidx.lifecycle.viewmodel.compose.viewModel
+  35 |  0 | import kotlinx.coroutines.launch
+  36 |  0 | 
+  37 |  0 | import androidx.compose.material.icons.filled.Add
+  38 |  0 | import androidx.compose.material.icons.filled.GroupAdd
+  39 |  0 | import androidx.compose.material.icons.filled.Check
+  40 |  0 | import androidx.compose.material.icons.filled.Delete
+  41 |  0 | import androidx.compose.material.icons.filled.MoreVert
+  42 |  0 | import androidx.compose.material.icons.filled.Refresh
+  43 |  0 | import androidx.compose.material.icons.filled.ContentCopy
+  44 |  0 | import androidx.compose.material.icons.filled.Edit
+  45 |  0 | import androidx.compose.material.icons.filled.Face
+  46 |  0 | import androidx.compose.material.icons.filled.StarBorder
+  47 |  0 | import androidx.compose.material.icons.filled.Star
+  48 |  0 | import androidx.compose.material.icons.filled.AccountCircle
+  49 |  0 | import androidx.compose.ui.platform.LocalClipboardManager
+  50 |  0 | import androidx.compose.material3.AlertDialog
+  51 |  0 | import androidx.compose.material3.TextButton
+  52 |  0 | import androidx.compose.material3.DropdownMenu
+  53 |  0 | import androidx.compose.material3.DropdownMenuItem
+  54 |  0 | import androidx.compose.material3.ModalBottomSheet
+  55 |  0 | import androidx.compose.material3.ListItem
+  56 |  0 | import androidx.compose.foundation.lazy.itemsIndexed
+  57 |  0 | import androidx.compose.runtime.saveable.rememberSaveable
+  58 |  0 | import kotlinx.coroutines.delay
+  59 |  0 | 
+  60 |  0 | @OptIn(ExperimentalMaterial3Api::class)
+  61 |  0 | @Composable
+  62 |  0 | fun GroupChatScreen(
+  63 |  0 | chatId: Int,
+  64 |  0 | onNavigateBack: () -> Unit,
+  65 |  0 | onNavigateToCharacterSettings: (Int) -> Unit = {},
+  66 |  0 | onDeleteComplete: () -> Unit = {},
+  67 |  0 | viewModel: ChatViewModel = viewModel(),
+  68 |  0 | personaViewModel: PersonaViewModel = viewModel()
+  69 |  0 | ) {
+  70 |  1 |   LaunchedEffect(chatId) {
+  71 |  2 |     viewModel.setChatId(chatId)
+  72 |  1 |   }
+  73 |  1 |   
+  74 |  1 |   val messages by viewModel.messages.collectAsState()
+  75 |  1 |   val allCharacters by viewModel.allCharacters.collectAsState()
+  76 |  1 |   val groupChat by viewModel.groupChat.collectAsState()
+  77 |  1 |   val character by viewModel.character.collectAsState()
+  78 |  1 |   val isTyping by viewModel.isTyping.collectAsState()
+  79 |  1 |   val boundPersonaId by viewModel.boundPersonaId.collectAsState()
+  80 |  1 |   val userPersonas by personaViewModel.userPersonas.collectAsState()
+  81 |  1 |   
+  82 |  1 |   var input by remember { mutableStateOf("") }
+  83 |  1 |   val listState = rememberLazyListState()
+  84 |  1 |   val coroutineScope = rememberCoroutineScope()
+  85 |  1 |   
+  86 |  1 |   var showAddParticipants by remember { mutableStateOf(false) }
+  87 |  1 |   
+  88 |  1 |   var showMenu by remember { mutableStateOf(false) }
+  89 |  1 |   var showPersonaMenu by remember { mutableStateOf(false) }
+  90 |  1 |   var showDeleteConfirm by remember { mutableStateOf(false) }
+  91 |  1 |   var showChatMemory by remember { mutableStateOf(false) }
+  92 |  1 |   val chatMemoryText by viewModel.chatMemoryText.collectAsState()
+  93 |  1 |   
+  94 |  1 |   val isGroupChat = chatId < 0
+  95 |  1 |   val title = if (isGroupChat) (groupChat?.name ?: "Group Chat") else (character?.name ?: "Chat")
+  96 |  1 |   
+  97 |  1 |   val currentParticipantIds = remember(groupChat) {
+  98 |  2 |     groupChat?.participantIds?.split(",")?.filter { it.isNotEmpty() }?.map { it.toInt() } ?: emptyList()
+  99 |  1 |   }
+ 100 |  1 |   
+ 101 |  1 |   LaunchedEffect(messages.size, isTyping) {
+ 102 |  2 |     if (messages.isNotEmpty() || isTyping) {
+ 103 |  3 |       listState.animateScrollToItem(0)
+ 104 |  3 |       
+ 105 |  2 |     }
+ 106 |  1 |   }
+ 107 |  1 |   
+ 108 |  1 |   if (boundPersonaId == null) {
+ 109 |  2 |     AlertDialog(
+ 110 |  2 |     onDismissRequest = { onNavigateBack() },
+ 111 |  2 |     title = { Text("Choose your Persona") },
+ 112 |  2 |     text = {
+ 113 |  3 |       Column {
+ 114 |  4 |         Text("Select a persona to roleplay as. It will be permanently bound to this chat.", modifier = Modifier.padding(bottom = 16.dp))
+ 115 |  4 |         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), reverseLayout = true) {
+ 116 |  5 |           item {
+ 117 |  6 |             ListItem(
+ 118 |  6 |             headlineContent = { Text("Default User", fontWeight = FontWeight.Bold) },
+ 119 |  6 |             modifier = Modifier.clickable { viewModel.bindPersona(-1) },
+ 120 |  6 |             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f))
+ 121 |  6 |             )
+ 122 |  5 |           }
+ 123 |  5 |           items(userPersonas) { persona ->
+ 124 |  6 |             ListItem(
+ 125 |  6 |             headlineContent = { Text(persona.name, fontWeight = FontWeight.Bold) },
+ 126 |  6 |             supportingContent = { Text(persona.description, maxLines = 2) },
+ 127 |  6 |             modifier = Modifier.clickable { viewModel.bindPersona(persona.id) },
+ 128 |  6 |             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f))
+ 129 |  6 |             )
+ 130 |  5 |           }
+ 131 |  4 |         }
+ 132 |  3 |       }
+ 133 |  2 |     },
+ 134 |  2 |     confirmButton = {}
+ 135 |  2 |     )
+ 136 |  1 |   }
+ 137 |  1 |   
+ 138 |  1 |   if (showChatMemory) {
+ 139 |  2 |     var editingMemoryText by remember { mutableStateOf(chatMemoryText) }
+ 140 |  2 |     AlertDialog(
+ 141 |  2 |     onDismissRequest = { showChatMemory = false },
+ 142 |  2 |     title = { Text("Chat Memory") },
+ 143 |  2 |     text = {
+ 144 |  3 |       Column {
+ 145 |  4 |         Text(
+ 146 |  4 |         "Add details, plot points, or rules here that you want the AI to never forget. This is constantly injected into their memory.",
+ 147 |  4 |         style = MaterialTheme.typography.bodySmall,
+ 148 |  4 |         modifier = Modifier.padding(bottom = 8.dp)
+ 149 |  4 |         )
+ 150 |  4 |         OutlinedTextField(
+ 151 |  4 |         value = editingMemoryText,
+ 152 |  4 |         onValueChange = { editingMemoryText = it },
+ 153 |  4 |         modifier = Modifier.fillMaxWidth().height(200.dp),
+ 154 |  4 |         placeholder = { Text("Example: The user and character are currently stranded on an island.") }
+ 155 |  4 |         )
+ 156 |  3 |       }
+ 157 |  2 |     },
+ 158 |  2 |     confirmButton = {
+ 159 |  3 |       TextButton(onClick = {
+ 160 |  4 |         viewModel.updateChatMemory(editingMemoryText)
+ 161 |  4 |         showChatMemory = false
+ 162 |  3 |       }) {
+ 163 |  4 |         Text("Save")
+ 164 |  3 |       }
+ 165 |  2 |     },
+ 166 |  2 |     dismissButton = {
+ 167 |  3 |       TextButton(onClick = { showChatMemory = false }) {
+ 168 |  4 |         Text("Cancel")
+ 169 |  3 |       }
+ 170 |  2 |     }
+ 171 |  2 |     )
+ 172 |  1 |   }
+ 173 |  1 |   
+ 174 |  1 |   Scaffold(
+ 175 |  1 |   containerColor = androidx.compose.ui.graphics.Color.Transparent,
+ 176 |  1 |   modifier = Modifier.fillMaxSize().imePadding(),
+ 177 |  1 |   topBar = {
+ 178 |  2 |     TopAppBar(
+ 179 |  2 |     title = {
+ 180 |  3 |       Row(
+ 181 |  3 |       verticalAlignment = Alignment.CenterVertically,
+ 182 |  3 |       modifier = Modifier.clickable {
+ 183 |  4 |         if (!isGroupChat) {
+ 184 |  5 |           // Navigate to character settings
+ 185 |  5 |           onNavigateToCharacterSettings(chatId)
+ 186 |  4 |         }
+ 187 |  3 |       }
+ 188 |  3 |       ) {
+ 189 |  4 |         if (!isGroupChat && character != null) {
+ 190 |  5 |           val avatarColor = androidx.compose.ui.graphics.Color(
+ 191 |  5 |           android.graphics.Color.HSVToColor(floatArrayOf((character!!.name.hashCode() % 360).toFloat(), 0.6f, 0.9f))
+ 192 |  5 |           )
+ 193 |  5 |           Box(
+ 194 |  5 |           modifier = Modifier
+ 195 |  5 |           .size(36.dp)
+ 196 |  5 |           .clip(CircleShape)
+ 197 |  5 |           .background(avatarColor, CircleShape),
+ 198 |  5 |           contentAlignment = Alignment.Center
+ 199 |  5 |           ) {
+ 200 |  6 |             if (character?.avatarUri != null) {
+ 201 |  7 |               coil.compose.AsyncImage(
+ 202 |  7 |               model = android.net.Uri.parse(character!!.avatarUri),
+ 203 |  7 |               contentDescription = "Avatar",
+ 204 |  7 |               contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+ 205 |  7 |               modifier = Modifier.fillMaxSize()
+ 206 |  7 |               )
+ 207 |  6 |             } else {
+ 208 |  7 |               Text(
+ 209 |  7 |               text = character!!.name.take(1).uppercase(),
+ 210 |  7 |               color = androidx.compose.ui.graphics.Color.White,
+ 211 |  7 |               style = MaterialTheme.typography.titleSmall,
+ 212 |  7 |               fontWeight = FontWeight.Bold
+ 213 |  7 |               )
+ 214 |  6 |             }
+ 215 |  5 |           }
+ 216 |  5 |           Spacer(modifier = Modifier.width(12.dp))
+ 217 |  4 |         }
+ 218 |  4 |         Text(
+ 219 |  4 |         text = title,
+ 220 |  4 |         fontWeight = FontWeight.Bold
+ 221 |  4 |         )
+ 222 |  3 |       }
+ 223 |  2 |     },
+ 224 |  2 |     navigationIcon = {
+ 225 |  3 |       IconButton(onClick = onNavigateBack) {
+ 226 |  4 |         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+ 227 |  3 |       }
+ 228 |  2 |     },
+ 229 |  2 |     actions = {
+ 230 |  3 |       if (isGroupChat) {
+ 231 |  4 |         IconButton(onClick = { showAddParticipants = true }) {
+ 232 |  5 |           Icon(Icons.Filled.GroupAdd, contentDescription = "Add Characters", tint = MaterialTheme.colorScheme.primary)
+ 233 |  4 |         }
+ 234 |  3 |       }
+ 235 |  3 |       
+ 236 |  3 |       Box {
+ 237 |  4 |         val rotation by animateFloatAsState(
+ 238 |  4 |         targetValue = if (showPersonaMenu) 180f else 0f,
+ 239 |  4 |         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+ 240 |  4 |         label = "PersonaIconRotation"
+ 241 |  4 |         )
+ 242 |  4 |         IconButton(onClick = { showPersonaMenu = true }) {
+ 243 |  5 |           Icon(Icons.Filled.AccountCircle, contentDescription = "Switch Persona", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.graphicsLayer { rotationZ = rotation })
+ 244 |  4 |         }
+ 245 |  4 |         DropdownMenu(
+ 246 |  4 |         expanded = showPersonaMenu,
+ 247 |  4 |         onDismissRequest = { showPersonaMenu = false },
+ 248 |  4 |         modifier = Modifier.animateContentSize(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow))
+ 249 |  4 |         ) {
+ 250 |  5 |           DropdownMenuItem(
+ 251 |  5 |           text = { Text("Default User", fontWeight = if (boundPersonaId == -1) FontWeight.Bold else FontWeight.Normal) },
+ 252 |  5 |           onClick = {
+ 253 |  6 |             viewModel.bindPersona(-1)
+ 254 |  6 |             showPersonaMenu = false
+ 255 |  5 |           }
+ 256 |  5 |           )
+ 257 |  5 |           userPersonas.forEach { persona ->
+ 258 |  6 |             DropdownMenuItem(
+ 259 |  6 |             text = { Text(persona.name, fontWeight = if (boundPersonaId == persona.id) FontWeight.Bold else FontWeight.Normal) },
+ 260 |  6 |             onClick = {
+ 261 |  7 |               viewModel.bindPersona(persona.id)
+ 262 |  7 |               showPersonaMenu = false
+ 263 |  6 |             }
+ 264 |  6 |             )
+ 265 |  5 |           }
+ 266 |  4 |         }
+ 267 |  3 |       }
+ 268 |  3 |       
+ 269 |  3 |       IconButton(onClick = { showMenu = true }) {
+ 270 |  4 |         Icon(Icons.Filled.MoreVert, contentDescription = "More Options", tint = MaterialTheme.colorScheme.primary)
+ 271 |  3 |       }
+ 272 |  3 |       DropdownMenu(
+ 273 |  3 |       expanded = showMenu,
+ 274 |  3 |       onDismissRequest = { showMenu = false }
+ 275 |  3 |       ) {
+ 276 |  4 |         DropdownMenuItem(
+ 277 |  4 |         text = { Text("Clear Chat") },
+ 278 |  4 |         onClick = {
+ 279 |  5 |           showMenu = false
+ 280 |  5 |           viewModel.clearChat()
+ 281 |  4 |         }
+ 282 |  4 |         )
+ 283 |  4 |         DropdownMenuItem(
+ 284 |  4 |         text = { Text("Chat Memory") },
+ 285 |  4 |         onClick = {
+ 286 |  5 |           showMenu = false
+ 287 |  5 |           showChatMemory = true
+ 288 |  4 |         }
+ 289 |  4 |         )
+ 290 |  4 |         if (isGroupChat) {
+ 291 |  5 |           DropdownMenuItem(
+ 292 |  5 |           text = { Text("Delete Group Chat") },
+ 293 |  5 |           onClick = {
+ 294 |  6 |             showMenu = false
+ 295 |  6 |             showDeleteConfirm = true
+ 296 |  5 |           }
+ 297 |  5 |           )
+ 298 |  4 |         }
+ 299 |  3 |       }
+ 300 |  2 |     },
+ 301 |  2 |     colors = TopAppBarDefaults.topAppBarColors(
+ 302 |  2 |     containerColor = androidx.compose.ui.graphics.Color.Transparent,
+ 303 |  2 |     )
+ 304 |  2 |     )
+ 305 |  1 |   }
+ 306 |  1 |   ) { innerPadding ->
+ 307 |  2 |     Column(
+ 308 |  2 |     modifier = Modifier
+ 309 |  2 |     .fillMaxSize()
+ 310 |  2 |     .padding(innerPadding)
+ 311 |  2 |     ) {
+ 312 |  3 |       if (messages.isEmpty() && !isTyping) {
+ 313 |  4 |         Column(
+ 314 |  4 |         modifier = Modifier.weight(1f).fillMaxWidth().padding(32.dp),
+ 315 |  4 |         horizontalAlignment = Alignment.CenterHorizontally,
+ 316 |  4 |         verticalArrangement = Arrangement.Center
+ 317 |  4 |         ) {
+ 318 |  5 |           val avatarColor = androidx.compose.ui.graphics.Color(
+ 319 |  5 |           android.graphics.Color.HSVToColor(floatArrayOf(((character?.name ?: "Group").hashCode() % 360).toFloat(), 0.6f, 0.9f))
+ 320 |  5 |           )
+ 321 |  5 |           Box(
+ 322 |  5 |           modifier = Modifier
+ 323 |  5 |           .size(80.dp)
+ 324 |  5 |           .clip(CircleShape)
+ 325 |  5 |           .background(avatarColor, CircleShape),
+ 326 |  5 |           contentAlignment = Alignment.Center
+ 327 |  5 |           ) {
+ 328 |  6 |             Text(
+ 329 |  6 |             text = (character?.name ?: "G").take(1).uppercase(),
+ 330 |  6 |             color = androidx.compose.ui.graphics.Color.White,
+ 331 |  6 |             style = MaterialTheme.typography.headlineLarge,
+ 332 |  6 |             fontWeight = FontWeight.Bold
+ 333 |  6 |             )
+ 334 |  5 |           }
+ 335 |  5 |           Spacer(modifier = Modifier.height(16.dp))
+ 336 |  5 |           Text(
+ 337 |  5 |           text = "No messages yet",
+ 338 |  5 |           style = MaterialTheme.typography.titleMedium,
+ 339 |  5 |           color = MaterialTheme.colorScheme.onBackground
+ 340 |  5 |           )
+ 341 |  5 |           Text(
+ 342 |  5 |           text = "Send a message to start the conversation.",
+ 343 |  5 |           style = MaterialTheme.typography.bodyMedium,
+ 344 |  5 |           color = MaterialTheme.colorScheme.onSurfaceVariant
+ 345 |  5 |           )
+ 346 |  4 |         }
+ 347 |  3 |       } else {
+ 348 |  4 |         LazyColumn(
+ 349 |  4 |         state = listState,
+ 350 |  4 |         modifier = Modifier
+ 351 |  4 |         .weight(1f)
+ 352 |  4 |         .fillMaxWidth()
+ 353 |  4 |         .padding(horizontal = 16.dp),
+ 354 |  4 |         verticalArrangement = Arrangement.spacedBy(8.dp), reverseLayout = true
+ 355 |  4 |         ) {
+ 356 |  5 |           item { Spacer(modifier = Modifier.height(8.dp)) }
+ 357 |  5 |           if (isTyping) {
+ 358 |  6 |             item(key = "typing") {
+ 359 |  7 |               TypingIndicatorBubble(
+ 360 |  7 |               role = if (isGroupChat) "AI" else character?.name ?: "AI",
+ 361 |  7 |               avatarUri = if (isGroupChat) null else character?.avatarUri,
+ 362 |  7 |               modifier = Modifier.animateItem()
+ 363 |  7 |               )
+ 364 |  6 |             }
+ 365 |  5 |           }
+ 366 |  5 |           val reversedMessages = messages.reversed()
+ 367 |  5 |           itemsIndexed(reversedMessages, key = { _, msg -> msg.id }) { index, message ->
+ 368 |  6 |             val senderCharacter = if (isGroupChat) {
+ 369 |  7 |               allCharacters.find { it.name.equals(message.role, ignoreCase = true) }
+ 370 |  6 |             } else {
+ 371 |  7 |               character
+ 372 |  6 |             }
+ 373 |  6 |             
+ 374 |  6 |             val displayRole = if (!isGroupChat && message.role != "user" && message.role != "System") {
+ 375 |  7 |               character?.name ?: message.role
+ 376 |  6 |             } else {
+ 377 |  7 |               message.role
+ 378 |  6 |             }
+ 379 |  6 |             
+ 380 |  6 |             MessageBubble(
+ 381 |  6 |             messageId = message.id,
+ 382 |  6 |             role = displayRole,
+ 383 |  6 |             content = message.content,
+ 384 |  6 |             isUser = message.role == "user",
+ 385 |  6 |             timestamp = message.timestamp,
+ 386 |  6 |             reaction = message.reaction,
+ 387 |  6 |             isPinned = message.isPinned,
+ 388 |  6 |             avatarUri = senderCharacter?.avatarUri,
+ 389 |  6 |             isLatest = index == 0,
+ 390 |  6 |             onRegenerate = { viewModel.regenerateLastMessage() },
+ 391 |  6 |             onEdit = { newText -> viewModel.editMessage(message.id, newText) },
+ 392 |  6 |             onDelete = { viewModel.deleteMessage(message.id) },
+ 393 |  6 |             onTogglePin = { viewModel.toggleMessagePin(message.id, message.isPinned) },
+ 394 |  6 |             onReaction = { reaction -> viewModel.setReaction(message.id, reaction) },
+ 395 |  6 |             modifier = Modifier.animateItem()
+ 396 |  6 |             )
+ 397 |  5 |           }
+ 398 |  5 |           item { Spacer(modifier = Modifier.height(8.dp)) }
+ 399 |  4 |         }
+ 400 |  3 |       }
+ 401 |  3 |       
+ 402 |  3 |       // Input field and actions
+ 403 |  3 |       Column(
+ 404 |  3 |       modifier = Modifier
+ 405 |  3 |       .fillMaxWidth()
+ 406 |  3 |       .background(MaterialTheme.colorScheme.surface)
+ 407 |  3 |       ) {
+ 408 |  4 |         Row(
+ 409 |  4 |         modifier = Modifier
+ 410 |  4 |         .fillMaxWidth()
+ 411 |  4 |         .padding(horizontal = 16.dp, vertical = 12.dp),
+ 412 |  4 |         verticalAlignment = Alignment.Bottom
+ 413 |  4 |         ) {
+ 414 |  5 |           IconButton(
+ 415 |  5 |           onClick = { /* No action yet */ },
+ 416 |  5 |           modifier = Modifier
+ 417 |  5 |           .padding(end = 8.dp)
+ 418 |  5 |           .size(48.dp)
+ 419 |  5 |           .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+ 420 |  5 |           ) {
+ 421 |  6 |             Icon(
+ 422 |  6 |             imageVector = Icons.Default.Add,
+ 423 |  6 |             contentDescription = "Add",
+ 424 |  6 |             tint = MaterialTheme.colorScheme.onSurfaceVariant
+ 425 |  6 |             )
+ 426 |  5 |           }
+ 427 |  5 |           
+ 428 |  5 |           OutlinedTextField(
+ 429 |  5 |           value = input,
+ 430 |  5 |           onValueChange = { input = it },
+ 431 |  5 |           placeholder = { Text("Type a message...") },
+ 432 |  5 |           modifier = Modifier.weight(1f),
+ 433 |  5 |           colors = TextFieldDefaults.colors(
+ 434 |  5 |           focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+ 435 |  5 |           unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+ 436 |  5 |           focusedIndicatorColor = Color.Transparent,
+ 437 |  5 |           unfocusedIndicatorColor = Color.Transparent
+ 438 |  5 |           ),
+ 439 |  5 |           shape = MaterialTheme.shapes.medium,
+ 440 |  5 |           maxLines = 5,
+ 441 |  5 |           minLines = 1,
+ 442 |  5 |           trailingIcon = {
+ 443 |  6 |             if (isTyping) {
+ 444 |  7 |               Box(
+ 445 |  7 |               modifier = Modifier
+ 446 |  7 |               .size(16.dp)
+ 447 |  7 |               .background(MaterialTheme.colorScheme.onSurface, RoundedCornerShape(2.dp))
+ 448 |  7 |               )
+ 449 |  6 |             } else if (input.isNotBlank()) {
+ 450 |  7 |               IconButton(
+ 451 |  7 |               onClick = {
+ 452 |  8 |                 viewModel.sendMessage(input)
+ 453 |  8 |                 input = ""
+ 454 |  7 |               },
+ 455 |  7 |               modifier = Modifier
+ 456 |  7 |               .size(36.dp)
+ 457 |  7 |               .background(MaterialTheme.colorScheme.primary, CircleShape)
+ 458 |  7 |               ) {
+ 459 |  8 |                 Icon(
+ 460 |  8 |                 imageVector = Icons.AutoMirrored.Filled.Send,
+ 461 |  8 |                 contentDescription = "Send",
+ 462 |  8 |                 tint = MaterialTheme.colorScheme.onPrimary,
+ 463 |  8 |                 modifier = Modifier.size(16.dp)
+ 464 |  8 |                 )
+ 465 |  7 |               }
+ 466 |  6 |             }
+ 467 |  5 |           }
+ 468 |  5 |           )
+ 469 |  4 |         }
+ 470 |  3 |       }
+ 471 |  2 |     }
+ 472 |  1 |   } // Closes Scaffold content lambda
+ 473 |  1 |   
+ 474 |  1 |   if (showDeleteConfirm) {
+ 475 |  2 |     AlertDialog(
+ 476 |  2 |     onDismissRequest = { showDeleteConfirm = false },
+ 477 |  2 |     title = { Text("Delete Group Chat") },
+ 478 |  2 |     text = { Text("Are you sure you want to delete this group chat? This action cannot be undone.") },
+ 479 |  2 |     confirmButton = {
+ 480 |  3 |       TextButton(onClick = {
+ 481 |  4 |         showDeleteConfirm = false
+ 482 |  4 |         viewModel.deleteGroupChat(onDeleteComplete)
+ 483 |  3 |       }) {
+ 484 |  4 |         Text("Delete", color = MaterialTheme.colorScheme.error)
+ 485 |  3 |       }
+ 486 |  2 |     },
+ 487 |  2 |     dismissButton = {
+ 488 |  3 |       TextButton(onClick = { showDeleteConfirm = false }) {
+ 489 |  4 |         Text("Cancel")
+ 490 |  3 |       }
+ 491 |  2 |     }
+ 492 |  2 |     )
+ 493 |  1 |   }
+ 494 |  1 |   
+ 495 |  1 |   if (showAddParticipants) {
+ 496 |  2 |     ModalBottomSheet(onDismissRequest = { showAddParticipants = false }) {
+ 497 |  3 |       Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
+ 498 |  4 |         Text(
+ 499 |  4 |         text = "Add Characters (${currentParticipantIds.size}/20)",
+ 500 |  4 |         style = MaterialTheme.typography.titleMedium,
+ 501 |  4 |         fontWeight = FontWeight.Bold,
+ 502 |  4 |         modifier = Modifier.padding(16.dp)
+ 503 |  4 |         )
+ 504 |  4 |         LazyColumn(modifier = Modifier.fillMaxWidth()) {
+ 505 |  5 |           items(allCharacters) { character ->
+ 506 |  6 |             val isSelected = currentParticipantIds.contains(character.id)
+ 507 |  6 |             ListItem(
+ 508 |  6 |             headlineContent = { Text(character.name) },
+ 509 |  6 |             supportingContent = { Text(character.traits, maxLines = 1) },
+ 510 |  6 |             trailingContent = {
+ 511 |  7 |               if (isSelected) {
+ 512 |  8 |                 Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
+ 513 |  7 |               }
+ 514 |  6 |             },
+ 515 |  6 |             modifier = Modifier.fillMaxWidth().clickable {
+ 516 |  7 |               if (!isSelected && currentParticipantIds.size < 20) {
+ 517 |  8 |                 viewModel.addParticipantToGroupChat(chatId, character.id)
+ 518 |  7 |               }
+ 519 |  6 |             }
+ 520 |  6 |             )
+ 521 |  5 |           }
+ 522 |  4 |         }
+ 523 |  3 |       }
+ 524 |  2 |     }
+ 525 |  1 |   }
+ 526 |  0 | }
+ 527 |  0 | 
+ 528 |  0 | @Composable
+ 529 |  0 | fun parseRoleplayText(text: String, isUser: Boolean): AnnotatedString {
+ 530 |  1 |   val actionColor = if (isUser)
+ 531 |  1 |   androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f)
+ 532 |  1 |   else
+ 533 |  1 |   MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+ 534 |  1 |   
+ 535 |  1 |   return buildAnnotatedString {
+ 536 |  2 |     var i = 0
+ 537 |  2 |     while (i < text.length) {
+ 538 |  3 |       if (i + 1 < text.length && text[i] == '*' && text[i + 1] == '*') {
+ 539 |  4 |         val end = text.indexOf("**", i + 2)
+ 540 |  4 |         if (end != -1) {
+ 541 |  5 |           withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+ 542 |  6 |             append(text.substring(i + 2, end))
+ 543 |  5 |           }
+ 544 |  5 |           i = end + 2
+ 545 |  5 |           continue
+ 546 |  4 |         }
+ 547 |  3 |       }
+ 548 |  3 |       if (text[i] == '*') {
+ 549 |  4 |         val end = text.indexOf('*', i + 1)
+ 550 |  4 |         if (end != -1) {
+ 551 |  5 |           withStyle(style = SpanStyle(fontStyle = FontStyle.Italic, color = actionColor)) {
+ 552 |  6 |             append(text.substring(i, end + 1))
+ 553 |  5 |           }
+ 554 |  5 |           i = end + 1
+ 555 |  5 |           continue
+ 556 |  4 |         }
+ 557 |  3 |       }
+ 558 |  3 |       append(text[i].toString())
+ 559 |  3 |       i++
+ 560 |  2 |     }
+ 561 |  1 |   }
+ 562 |  0 | }
+ 563 |  0 | 
+ 564 |  0 | @Composable
+ 565 |  0 | fun TypingIndicatorBubble(role: String, avatarUri: String? = null, modifier: Modifier = Modifier) {
+ 566 |  1 |   Row(
+ 567 |  1 |   verticalAlignment = Alignment.Top,
+ 568 |  1 |   horizontalArrangement = Arrangement.Start,
+ 569 |  1 |   modifier = modifier.fillMaxWidth().padding(bottom = 8.dp)
+ 570 |  1 |   ) {
+ 571 |  2 |     val avatarColor = androidx.compose.ui.graphics.Color(
+ 572 |  2 |     android.graphics.Color.HSVToColor(floatArrayOf((role.hashCode() % 360).toFloat(), 0.6f, 0.9f))
+ 573 |  2 |     )
+ 574 |  2 |     Box(
+ 575 |  2 |     modifier = Modifier
+ 576 |  2 |     .size(36.dp)
+ 577 |  2 |     .clip(CircleShape)
+ 578 |  2 |     .background(avatarColor, CircleShape),
+ 579 |  2 |     contentAlignment = Alignment.Center
+ 580 |  2 |     ) {
+ 581 |  3 |       if (avatarUri != null) {
+ 582 |  4 |         coil.compose.AsyncImage(
+ 583 |  4 |         model = android.net.Uri.parse(avatarUri),
+ 584 |  4 |         contentDescription = "Avatar",
+ 585 |  4 |         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+ 586 |  4 |         modifier = Modifier.fillMaxSize()
+ 587 |  4 |         )
+ 588 |  3 |       } else {
+ 589 |  4 |         Text(
+ 590 |  4 |         text = role.take(1).uppercase(),
+ 591 |  4 |         color = androidx.compose.ui.graphics.Color.White,
+ 592 |  4 |         style = MaterialTheme.typography.titleSmall,
+ 593 |  4 |         fontWeight = FontWeight.Bold
+ 594 |  4 |         )
+ 595 |  3 |       }
+ 596 |  2 |     }
+ 597 |  2 |     Spacer(modifier = Modifier.width(8.dp))
+ 598 |  2 |     Column(horizontalAlignment = Alignment.Start) {
+ 599 |  3 |       Text(
+ 600 |  3 |       text = role,
+ 601 |  3 |       style = MaterialTheme.typography.labelMedium,
+ 602 |  3 |       color = MaterialTheme.colorScheme.onSurface,
+ 603 |  3 |       fontWeight = FontWeight.Bold,
+ 604 |  3 |       modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+ 605 |  3 |       )
+ 606 |  3 |       Box(
+ 607 |  3 |       modifier = Modifier
+ 608 |  3 |       .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(24.dp, 24.dp, 24.dp, 6.dp))
+ 609 |  3 |       .padding(horizontal = 16.dp, vertical = 14.dp)
+ 610 |  3 |       ) {
+ 611 |  4 |         var dotCount by remember { mutableIntStateOf(0) }
+ 612 |  4 |         LaunchedEffect(Unit) {
+ 613 |  5 |           while(true) {
+ 614 |  6 |             delay(400)
+ 615 |  6 |             dotCount = (dotCount + 1) % 4
+ 616 |  5 |           }
+ 617 |  4 |         }
+ 618 |  4 |         Row(
+ 619 |  4 |         horizontalArrangement = Arrangement.spacedBy(4.dp),
+ 620 |  4 |         verticalAlignment = Alignment.CenterVertically
+ 621 |  4 |         ) {
+ 622 |  5 |           val dotColor = MaterialTheme.colorScheme.onSurfaceVariant
+ 623 |  5 |           Box(modifier = Modifier.size(6.dp).background(if (dotCount > 0) dotColor else dotColor.copy(alpha = 0.3f), CircleShape))
+ 624 |  5 |           Box(modifier = Modifier.size(6.dp).background(if (dotCount > 1) dotColor else dotColor.copy(alpha = 0.3f), CircleShape))
+ 625 |  5 |           Box(modifier = Modifier.size(6.dp).background(if (dotCount > 2) dotColor else dotColor.copy(alpha = 0.3f), CircleShape))
+ 626 |  4 |         }
+ 627 |  3 |       }
+ 628 |  2 |     }
+ 629 |  1 |   }
+ 630 |  0 | }
+ 631 |  0 | 
+ 632 |  0 | @Composable
+ 633 |  0 | fun MessageBubble(
+ 634 |  0 | messageId: Int,
+ 635 |  0 | role: String,
+ 636 |  0 | content: String,
+ 637 |  0 | isUser: Boolean,
+ 638 |  0 | timestamp: Long,
+ 639 |  0 | reaction: String? = null,
+ 640 |  0 | isPinned: Boolean = false,
+ 641 |  0 | avatarUri: String? = null,
+ 642 |  0 | isLatest: Boolean = false,
+ 643 |  0 | onRegenerate: (() -> Unit)? = null,
+ 644 |  0 | onEdit: ((String) -> Unit)? = null,
+ 645 |  0 | onDelete: (() -> Unit)? = null,
+ 646 |  0 | onTogglePin: (() -> Unit)? = null,
+ 647 |  0 | onReaction: ((String?) -> Unit)? = null,
+ 648 |  0 | onTextAnimated: (() -> Unit)? = null,
+ 649 |  0 | modifier: Modifier = Modifier
+ 650 |  0 | ) {
+ 651 |  1 |   val clipboardManager = LocalClipboardManager.current
+ 652 |  1 |   val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
+ 653 |  1 |   val bgColor = if (isUser) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+ 654 |  1 |   val textColor = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+ 655 |  1 |   val shape = if (isUser) {
+ 656 |  2 |     RoundedCornerShape(24.dp, 24.dp, 6.dp, 24.dp)
+ 657 |  1 |   } else {
+ 658 |  2 |     RoundedCornerShape(24.dp, 24.dp, 24.dp, 6.dp)
+ 659 |  1 |   }
+ 660 |  1 |   
+ 661 |  1 |   val timeString = remember(timestamp) {
+ 662 |  2 |     val sdf = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+ 663 |  2 |     sdf.format(java.util.Date(timestamp))
+ 664 |  1 |   }
+ 665 |  1 |   
+ 666 |  1 |   var animatedText by rememberSaveable(messageId) {
+ 667 |  2 |     mutableStateOf(if (isLatest && !isUser) "" else content)
+ 668 |  1 |   }
+ 669 |  1 |   
+ 670 |  1 |   var isEditing by remember { mutableStateOf(false) }
+ 671 |  1 |   var editValue by remember(content) { mutableStateOf(content) }
+ 672 |  1 |   
+ 673 |  1 |   LaunchedEffect(content, isLatest) {
+ 674 |  2 |     if (isLatest && !isUser && animatedText.length < content.length) {
+ 675 |  3 |       val startIdx = animatedText.length
+ 676 |  3 |       for (i in startIdx..content.length) {
+ 677 |  4 |         animatedText = content.substring(0, i)
+ 678 |  4 |         onTextAnimated?.invoke()
+ 679 |  4 |         delay(15) // 15ms per letter for smooth, readable letter-by-letter typing
+ 680 |  3 |       }
+ 681 |  3 |       animatedText = content
+ 682 |  2 |     } else {
+ 683 |  3 |       animatedText = content
+ 684 |  2 |     }
+ 685 |  1 |   }
+ 686 |  1 |   
+ 687 |  1 |   var visible by remember { mutableStateOf(false) }
+ 688 |  1 |   LaunchedEffect(Unit) { visible = true }
+ 689 |  1 |   
+ 690 |  1 |   AnimatedVisibility(
+ 691 |  1 |   visible = visible,
+ 692 |  1 |   enter = scaleIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)) + fadeIn(),
+ 693 |  1 |   modifier = modifier.fillMaxWidth().padding(bottom = 8.dp)
+ 694 |  1 |   ) {
+ 695 |  2 |     Box(
+ 696 |  2 |     contentAlignment = alignment
+ 697 |  2 |     ) {
+ 698 |  3 |       Column(horizontalAlignment = if (isUser) Alignment.End else Alignment.Start) {
+ 699 |  4 |         Row(
+ 700 |  4 |         verticalAlignment = Alignment.Top,
+ 701 |  4 |         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+ 702 |  4 |         ) {
+ 703 |  5 |           if (!isUser && role != "System") {
+ 704 |  6 |             val avatarColor = androidx.compose.ui.graphics.Color(
+ 705 |  6 |             android.graphics.Color.HSVToColor(floatArrayOf((role.hashCode() % 360).toFloat(), 0.6f, 0.9f))
+ 706 |  6 |             )
+ 707 |  6 |             Box(
+ 708 |  6 |             modifier = Modifier
+ 709 |  6 |             .size(36.dp)
+ 710 |  6 |             .clip(CircleShape)
+ 711 |  6 |             .background(avatarColor, CircleShape),
+ 712 |  6 |             contentAlignment = Alignment.Center
+ 713 |  6 |             ) {
+ 714 |  7 |               if (avatarUri != null) {
+ 715 |  8 |                 coil.compose.AsyncImage(
+ 716 |  8 |                 model = android.net.Uri.parse(avatarUri),
+ 717 |  8 |                 contentDescription = "Avatar",
+ 718 |  8 |                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+ 719 |  8 |                 modifier = Modifier.fillMaxSize()
+ 720 |  8 |                 )
+ 721 |  7 |               } else {
+ 722 |  8 |                 Text(
+ 723 |  8 |                 text = role.take(1).uppercase(),
+ 724 |  8 |                 color = androidx.compose.ui.graphics.Color.White,
+ 725 |  8 |                 style = MaterialTheme.typography.titleSmall,
+ 726 |  8 |                 fontWeight = FontWeight.Bold
+ 727 |  8 |                 )
+ 728 |  7 |               }
+ 729 |  6 |             }
+ 730 |  6 |             Spacer(modifier = Modifier.width(8.dp))
+ 731 |  5 |           }
+ 732 |  5 |           
+ 733 |  5 |           Column(horizontalAlignment = if (isUser) Alignment.End else Alignment.Start) {
+ 734 |  6 |             if (!isUser && role != "System") {
+ 735 |  7 |               Text(
+ 736 |  7 |               text = role,
+ 737 |  7 |               style = MaterialTheme.typography.labelMedium,
+ 738 |  7 |               color = MaterialTheme.colorScheme.onSurface,
+ 739 |  7 |               fontWeight = FontWeight.Bold,
+ 740 |  7 |               modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+ 741 |  7 |               )
+ 742 |  6 |             }
+ 743 |  6 |             Box(
+ 744 |  6 |             modifier = Modifier
+ 745 |  6 |             .animateContentSize(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
+ 746 |  6 |             .background(bgColor, shape)
+ 747 |  6 |             .padding(16.dp)
+ 748 |  6 |             .widthIn(max = 300.dp)
+ 749 |  6 |             ) {
+ 750 |  7 |               if (isEditing) {
+ 751 |  8 |                 Column {
+ 752 |  9 |                   OutlinedTextField(
+ 753 |  9 |                   value = editValue,
+ 754 |  9 |                   onValueChange = { editValue = it },
+ 755 |  9 |                   colors = TextFieldDefaults.colors(
+ 756 |  9 |                   focusedContainerColor = MaterialTheme.colorScheme.surface,
+ 757 |  9 |                   unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+ 758 |  9 |                   focusedIndicatorColor = Color.Transparent,
+ 759 |  9 |                   unfocusedIndicatorColor = Color.Transparent,
+ 760 |  9 |                   focusedTextColor = MaterialTheme.colorScheme.onSurface,
+ 761 |  9 |                   unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+ 762 |  9 |                   ),
+ 763 |  9 |                   shape = MaterialTheme.shapes.small
+ 764 |  9 |                   )
+ 765 |  9 |                   Row(
+ 766 |  9 |                   horizontalArrangement = Arrangement.End,
+ 767 |  9 |                   modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+ 768 |  9 |                   ) {
+ 769 | 10 |                     TextButton(onClick = { isEditing = false }) {
+ 770 | 11 |                       Text("Cancel", color = textColor)
+ 771 | 10 |                     }
+ 772 | 10 |                     TextButton(onClick = {
+ 773 | 11 |                       isEditing = false
+ 774 | 11 |                       onEdit?.invoke(editValue)
+ 775 | 10 |                     }) {
+ 776 | 11 |                       Text("Save", color = textColor, fontWeight = FontWeight.Bold)
+ 777 | 10 |                     }
+ 778 |  9 |                   }
+ 779 |  8 |                 }
+ 780 |  7 |               } else {
+ 781 |  8 |                 Text(
+ 782 |  8 |                 text = parseRoleplayText(animatedText, isUser),
+ 783 |  8 |                 color = textColor,
+ 784 |  8 |                 style = MaterialTheme.typography.bodyLarge
+ 785 |  8 |                 )
+ 786 |  7 |               }
+ 787 |  6 |             }
+ 788 |  5 |           }
+ 789 |  4 |         }
+ 790 |  4 |         var showReactionPicker by remember { mutableStateOf(false) }
+ 791 |  4 |         
+ 792 |  4 |         if (reaction != null) {
+ 793 |  5 |           Box(
+ 794 |  5 |           modifier = Modifier
+ 795 |  5 |           .padding(start = if(isUser) 0.dp else 44.dp, top = 4.dp)
+ 796 |  5 |           .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+ 797 |  5 |           .clickable { onReaction?.invoke(null) }
+ 798 |  5 |           .padding(horizontal = 8.dp, vertical = 4.dp)
+ 799 |  5 |           ) {
+ 800 |  6 |             Text(text = reaction, fontSize = 14.sp)
+ 801 |  5 |           }
+ 802 |  4 |         }
+ 803 |  4 |         
+ 804 |  4 |         if (showReactionPicker) {
+ 805 |  5 |           Row(
+ 806 |  5 |           modifier = Modifier.padding(start = if(isUser) 0.dp else 44.dp, top = 4.dp),
+ 807 |  5 |           horizontalArrangement = Arrangement.spacedBy(8.dp)
+ 808 |  5 |           ) {
+ 809 |  6 |             listOf("❤️", "😂", "😮", "😢", "🔥", "👍").forEach { emoji ->
+ 810 |  7 |               Text(
+ 811 |  7 |               text = emoji,
+ 812 |  7 |               modifier = Modifier
+ 813 |  7 |               .clickable {
+ 814 |  8 |                 onReaction?.invoke(emoji)
+ 815 |  8 |                 showReactionPicker = false
+ 816 |  7 |               }
+ 817 |  7 |               .padding(4.dp),
+ 818 |  7 |               fontSize = 20.sp
+ 819 |  7 |               )
+ 820 |  6 |             }
+ 821 |  5 |           }
+ 822 |  4 |         }
+ 823 |  4 |         
+ 824 |  4 |         if (role != "System" && animatedText == content && !isEditing) {
+ 825 |  5 |           Row(
+ 826 |  5 |           modifier = Modifier.padding(start = if(isUser) 0.dp else 44.dp, top = 4.dp),
+ 827 |  5 |           horizontalArrangement = Arrangement.spacedBy(8.dp),
+ 828 |  5 |           verticalAlignment = Alignment.CenterVertically
+ 829 |  5 |           ) {
+ 830 |  6 |             Text(
+ 831 |  6 |             text = timeString,
+ 832 |  6 |             style = MaterialTheme.typography.labelSmall,
+ 833 |  6 |             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+ 834 |  6 |             modifier = Modifier.padding(end = 4.dp)
+ 835 |  6 |             )
+ 836 |  6 |             if (!isUser) {
+ 837 |  7 |               IconButton(onClick = { showReactionPicker = !showReactionPicker }, modifier = Modifier.size(28.dp)) {
+ 838 |  8 |                 Icon(Icons.Filled.Face, contentDescription = "React", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+ 839 |  7 |               }
+ 840 |  6 |             }
+ 841 |  6 |             IconButton(onClick = { clipboardManager.setText(AnnotatedString(content)) }, modifier = Modifier.size(28.dp)) {
+ 842 |  7 |               Icon(Icons.Filled.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+ 843 |  6 |             }
+ 844 |  6 |             IconButton(onClick = { onTogglePin?.invoke() }, modifier = Modifier.size(28.dp)) {
+ 845 |  7 |               Icon(if (isPinned) Icons.Filled.Star else Icons.Filled.StarBorder, contentDescription = "Pin", modifier = Modifier.size(16.dp), tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+ 846 |  6 |             }
+ 847 |  6 |             IconButton(onClick = { isEditing = true }, modifier = Modifier.size(28.dp)) {
+ 848 |  7 |               Icon(Icons.Filled.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+ 849 |  6 |             }
+ 850 |  6 |             IconButton(onClick = { onDelete?.invoke() }, modifier = Modifier.size(28.dp)) {
+ 851 |  7 |               Icon(Icons.Filled.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+ 852 |  6 |             }
+ 853 |  6 |             if (isLatest && onRegenerate != null && !isUser) {
+ 854 |  7 |               IconButton(onClick = onRegenerate, modifier = Modifier.size(28.dp)) {
+ 855 |  8 |                 Icon(Icons.Filled.Refresh, contentDescription = "Regenerate", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+ 856 |  7 |               }
+ 857 |  6 |             }
+ 858 |  5 |           }
+ 859 |  4 |         }
+ 860 |  3 |       }
+ 861 |  2 |     }
+ 862 |  1 |   }
+ 863 |  0 | }

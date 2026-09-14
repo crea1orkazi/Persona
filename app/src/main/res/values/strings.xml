@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Crea1orFuN</string>
+    <string name="no_characters_yet">No characters yet!</string>
+    <string name="create_character">Create Character</string>
+    <string name="add_character_desc">Add new character</string>
+    <string name="profile_desc">Profile</string>
+    <string name="profile_title">My Profile</string>
+    <string name="user_name">Bubble User</string>
+    <string name="user_email">user@bubble.app</string>
+    <string name="settings">Settings</string>
+    <string name="help_feedback">Help &amp; Feedback</string>
+    <string name="logout">Logout</string>
+    <string name="set_pfp">Change Profile</string>
+    <string name="change_username">Change Username</string>
+    <string name="welcome_title">Welcome to Crea1orFuN</string>
+    <string name="welcome_subtitle">Smart conversations.\nEndless possibilities.</string>
+    <string name="enter_username">Enter your username</string>
+    <string name="continue_btn">Continue</string>
+    <string name="app_logo_text">Crea1orFuN</string>
+    <string name="character_name_label">Name</string>
+    <string name="character_traits_label">Personality Traits</string>
+    <string name="character_greeting_label">Default Greeting</string>
+    <string name="enable_narration_title">Allow Narration</string>
+    <string name="enable_narration_desc">If disabled, the character is strictly chat-locked.</string>
+    <string name="save_btn">Save</string>
+    <string name="character_description_label">Character Description</string>
+    <string name="character_description_hint">Describe the character (e.g. from a game or movie) to auto-fill details...</string>
+    <string name="generate_ai_btn">Auto-fill with AI</string>
+    <string name="character_narration_label">Background &amp; Setting</string>
+    <string name="character_narration_hint">Describe the environment or scenario...</string>
+</resources>

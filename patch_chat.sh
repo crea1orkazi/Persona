@@ -1,0 +1,4 @@
+sed -i '/Scaffold(/a \        containerColor = androidx.compose.ui.graphics.Color.Transparent,' app/src/main/java/com/example/ui/screens/GroupChatScreen.kt
+sed -i 's/colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant)/colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f))/' app/src/main/java/com/example/ui/screens/GroupChatScreen.kt
+sed -i 's/val bgColor = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant/val bgColor = if (isUser) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)/' app/src/main/java/com/example/ui/screens/GroupChatScreen.kt
+sed -i 's/containerColor = MaterialTheme.colorScheme.surfaceVariant,/containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),/' app/src/main/java/com/example/ui/screens/GroupChatScreen.kt

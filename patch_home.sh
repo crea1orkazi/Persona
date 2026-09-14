@@ -1,0 +1,2 @@
+sed -i '/Scaffold(/a \        containerColor = androidx.compose.ui.graphics.Color.Transparent,' app/src/main/java/com/example/ui/screens/HomeScreen.kt
+sed -i 's/colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),/colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)),/' app/src/main/java/com/example/ui/screens/HomeScreen.kt

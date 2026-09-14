@@ -1,0 +1,6 @@
+{
+  "name": "Crea1orFuN",
+  "description": "An empty canvas for customizable AI characters.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

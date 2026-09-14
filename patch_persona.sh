@@ -1,0 +1,1 @@
+sed -i 's/import androidx.compose.material.icons.filled.Star/import androidx.compose.material.icons.filled.Star\nimport androidx.compose.material.icons.filled.AccountCircle/' app/src/main/java/com/example/ui/screens/GroupChatScreen.kt
